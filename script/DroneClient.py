@@ -3,6 +3,7 @@ from dji_ros.msg import *
 from std_msgs.msg import String, Float32, UInt8
 from nav_msgs.msg import Odometry
 from dji_ros.srv import *
+import time
 
 import rospy
 
@@ -25,7 +26,8 @@ class DroneClient:
         "local_position": local_position,
         "odom": Odometry,
         "rc_channels": rc_channels,
-        "velocity": velocity
+        "velocity": velocity,
+        "obtained_control":UInt8
     }
 
     ServicePair = {
@@ -82,18 +84,33 @@ class DroneClient:
     """
     Conventions
     """
+    def LockforControl(self):
+        while self.data["obtained_control"] != 1:
+            time.sleep(0.1)
 
     def Takeoff(self):
+        if self.data["obtained_control"] == 0:
+            return False
         self.services["drone_action_control"](4)
+        return True
 
     def Landing(self):
+        if self.data["obtained_control"] == 0:
+            return False
         self.services["drone_action_control"](6)
+        return True
 
     def Gohome(self):
+        if self.data["obtained_control"] == 0:
+            return False
         self.services["drone_action_control"](1)
+        return True
 
     def FlytoLocal(self,x,y,z):
+        if self.data["obtained_control"] == 0:
+            return False
         self.services["local_navigation_service"](x,y,z)
+        return True
 
 def UnitTest():
     print "Unit Test of drone client"
